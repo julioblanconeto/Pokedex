@@ -1,0 +1,173 @@
+﻿@page "/counter"
+@using Newtonsoft.Json
+@using Pokedex.Data
+@using Pokedex.Dto
+@using Pokedex.Model
+@using System.Drawing;
+@using System.Drawing.Text;
+@using System.IO;
+@using Pokedex.Utilities.Dictionaries
+@using static Pokedex.Dto.showPokemonView
+
+ @inject PokemonsServices PokemonsServices
+
+<style>
+    .pokebola {
+        width: 276px;
+        height: 276px;
+        float: left;
+        border-radius: 150px;
+        border-top: solid 5px red;
+        border-bottom: solid 5px white;
+        margin-left: 15px;
+        background-image: linear-gradient(to top, red 0%, red 50%, white 50%,white 100% )
+    }
+
+    .pokebolaExterna {
+        width: 276px;
+        height: 276px;
+        border-radius: 150px;
+        position: relative;
+        background-image: linear-gradient(to bottom, red 0%, red 50%, white 50%,white 100% )
+    }
+
+        .pokebolaExterna:after {
+            top: calc(50% - 10px);
+            width: 100%;
+            height: 20px;
+            background-color: #000;
+        }
+
+        .pokebolaExterna:hover {
+            z-index-5;
+        }
+
+    .pokebola-botao {
+        width: 50px;
+        height: 50px;
+        background-color: #FFF;
+        border: 10px solid #000;
+        border-radius: 50%;
+        position: absolute;
+        top: calc(50% - 25px);
+        left: calc(50% - 25px);
+        z-index: 10;
+    }
+
+        .pokebola-botao:before {
+            content: "";
+            position: absolute;
+            top: calc(50% - 10px);
+            left: calc(50% - 10px);
+            width: 20px;
+            height: 20px;
+            background-color: #FFF;
+            border: 3px solid #000;
+            border-radius: 50%;
+            z-index: 10;
+        }
+
+    h1 {
+        color: darkred;
+        font-family: Pokemon Hollow;
+        text-align: center;
+    }
+
+    body {
+        background-color: silver;
+    }
+
+</style>
+
+<PageTitle>POKEDEX</PageTitle>
+
+<h1>POKEMON JHOTO</h1>
+
+
+@foreach (showPokemonView pokemon in pokemons)
+{
+    foreach (var tipo in pokemon.Tipo)
+    {
+        tiposPokemon.Add(tipo);
+    }
+    background = setBackGroundColor(tiposPokemon);
+    tiposPokemon = new();
+
+    @*     <div class="pokebolaExterna">
+        <div class="pokebola-botao"></div>
+    </div> *@
+    <RadzenCard Class="rz-my-12 pokebola card-body" Style="@background">
+        <div style="text-align:center;  ">
+            @if (pokemon.Tipo.First().Name == "fighting" || pokemon.Tipo.First().Name == "poison")
+            {
+                <RadzenText Style="color:white;" class="align-content-center ">Numero: @pokemon.Order</RadzenText>
+                <RadzenText Style="color:white;" class="align-content-center">Nome: @pokemon.Name</RadzenText>
+                @if (pokemon.Tipo.First().Name == pokemon.Tipo.Last().Name)
+                {
+                    <RadzenText Style="color:white;" class="align-content-center">Tipo:  @pokemon.Tipo.First().Name </RadzenText>
+                }
+                else
+                {
+                    <RadzenText Style="color:white;" class="align-content-center">Tipo:  @pokemon.Tipo.First().Name/ @pokemon.Tipo.Last().Name </RadzenText>
+                }
+            }
+            else
+            {
+                <RadzenText class="align-content-center ">Numero: @pokemon.Order</RadzenText>
+                <RadzenText class="align-content-center">Nome: @pokemon.Name</RadzenText>
+                @if (pokemon.Tipo.First().Name == pokemon.Tipo.Last().Name)
+                {
+                    <RadzenText class="align-content-center">Tipo:  @pokemon.Tipo.First().Name </RadzenText>
+                }
+                else
+                {
+                    <RadzenText class="align-content-center">Tipo:  @pokemon.Tipo.First().Name/ @pokemon.Tipo.Last().Name </RadzenText>
+                }
+            }
+            <RadzenImage Path="@pokemon.Foto" Style="width:200px; margin-top:-15px;" />
+        </div>
+    </RadzenCard>
+}
+
+@code {
+    List<showPokemonView> pokemons = new List<showPokemonView>();
+
+    private readonly KindAndColorDictionary kindAndColorDictionary = new();
+    private List<Tipos> tiposPokemon = new();
+    private string background = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var resultado = PokemonsServices.GetPokemonsAsync(151,100);
+
+
+        pokemons = await resultado;
+
+
+    }
+
+    public string setBackGroundColor(List<Tipos> tipos)
+    {
+
+        var colors1 = tipos.First().Name;
+        var colors2 = tipos.Last().Name;
+        string result = "";
+
+
+
+        if (colors2 != null)
+        {
+            var color1 = kindAndColorDictionary.ColorDictionary.FirstOrDefault(x => x.Key == colors1).Value;
+            var color2 = kindAndColorDictionary.ColorDictionary.FirstOrDefault(x => x.Key == colors2).Value;
+            result = $"background-image: linear-gradient(to bottom right, {color1} 0%, {color1} 50%, {color2} 50%,{color2} 100% );";
+        }
+        else
+        {
+            var color1 = kindAndColorDictionary.ColorDictionary.Select(x => x.Value).Contains(colors1);
+            result = $"background-image: linear-gradient(to bottom right, {color1} 0%, {color1} 50%, {color1} 50%,{color1} 100% );";
+        }
+
+
+        return result;
+    }
+}

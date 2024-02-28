@@ -1,0 +1,197 @@
+﻿@page "/"
+@using Newtonsoft.Json
+@using Pokedex.Data
+@using Pokedex.Dto
+@using Pokedex.Model
+@using System.Drawing;
+@using System.Drawing.Text;
+@using System.IO;
+@using Pokedex.Utilities.Dictionaries
+@using static Pokedex.Dto.showPokemonView
+
+ @inject PokemonsServices PokemonsServices
+ @inject DialogService DialogService
+
+<style>
+    .pokebola {
+        width: 276px;
+        height: 276px;
+        float: left;
+        border-radius: 150px;
+        border-top: solid 5px red;
+        border-bottom: solid 5px white;
+        margin-left: 15px;
+        background-image: linear-gradient(to top, red 0%, red 50%, white 50%,white 100% )
+    }
+
+    .pokebolaExterna {
+        width: 276px;
+        height: 276px;
+        border-radius: 150px;
+        position: relative;
+        background-image: linear-gradient(to bottom, red 0%, red 50%, white 50%,white 100% )
+    }
+
+        .pokebolaExterna:after {
+            top: calc(50% - 10px);
+            width: 100%;
+            height: 20px;
+            background-color: #000;
+        }
+
+        .pokebolaExterna:hover {
+            z-index-5;
+        }
+
+    .pokebola-botao {
+        width: 50px;
+        height: 50px;
+        background-color: #FFF;
+        border: 10px solid #000;
+        border-radius: 50%;
+        position: absolute;
+        top: calc(50% - 25px);
+        left: calc(50% - 25px);
+        z-index: 10;
+    }
+
+        .pokebola-botao:before {
+            content: "";
+            position: absolute;
+            top: calc(50% - 10px);
+            left: calc(50% - 10px);
+            width: 20px;
+            height: 20px;
+            background-color: #FFF;
+            border: 3px solid #000;
+            border-radius: 50%;
+            z-index: 10;
+        }
+
+    h1 {
+        color: darkred;
+        font-family: Pokemon Hollow;
+        text-align: center;
+    }
+
+    body {
+        background-color: silver;
+    }
+
+</style>
+
+<div id="pokedexDetail" style="display:@showDiv" onclick="@HiddenPokedex">
+    <div style="width:100%; height:1920px; background-color:rgba(50,50,75,0.5); position:fixed;">
+        <RadzenImage Path= src="img/pokedex.png" Style="width: 540px; position:fixed; left:50%; top:-50px; margin-left:-160px;" AlternateText="pokedex" />
+        <RadzenImage Path="@pokefoto" Style="position:fixed; width:450px; left:50%; top:25%; margin-left:-114px; background-color: black;" />
+        <RadzenText Style="color:black; position:fixed; left:44%; top:75%"> @pokeName</RadzenText>
+        <RadzenText Style="color:black; position:fixed; left:65%; top:75%"> @pokeTipo</RadzenText>
+    </div>
+</div>
+
+<PageTitle>POKEMON KANTO</PageTitle>
+
+<h1>POKEMON KANTO</h1>
+
+@foreach (showPokemonView pokemon in pokemons)
+{
+    foreach (var tipo in pokemon.Tipo)
+    {
+        tiposPokemon.Add(tipo);
+    }
+    background = setBackGroundColor(tiposPokemon);
+    tiposPokemon = new();
+
+    @*     <div class="pokebolaExterna">
+        <div class="pokebola-botao"></div>
+    </div> *@
+    <RadzenCard Class="rz-my-12 pokebola card-body" Style="@background"  @onclick="() => ShowPokedex(pokemon.Name, pokemon.Foto, pokemon.Tipo.First().Name) ">
+        <div style="text-align:center; cursor:pointer ">
+            @if (pokemon.Tipo.First().Name == "fighting" || pokemon.Tipo.First().Name == "poison" || pokemon.Tipo.First().Name == "grass" || pokemon.Tipo.First().Name == "bug" || pokemon.Tipo.First().Name == "fire" || pokemon.Tipo.First().Name == "ghost")
+            {
+                <RadzenText Style="color:white;" class="align-content-center ">Numero: @pokemon.Order</RadzenText>
+                <RadzenText Style="color:white;" class="align-content-center">Nome: @pokemon.Name</RadzenText>
+                @if (pokemon.Tipo.First().Name == pokemon.Tipo.Last().Name)
+                {
+                    <RadzenText Style="color:white;" class="align-content-center">Tipo:  @pokemon.Tipo.First().Name </RadzenText>
+                }
+                else
+                {
+                    <RadzenText Style="color:white;" class="align-content-center">Tipo:  @pokemon.Tipo.First().Name / @pokemon.Tipo.Last().Name </RadzenText>
+                }
+            }
+            else
+            {
+                <RadzenText class="align-content-center ">Numero: @pokemon.Order</RadzenText>
+                <RadzenText class="align-content-center">Nome: @pokemon.Name</RadzenText>
+                @if (pokemon.Tipo.First().Name == pokemon.Tipo.Last().Name)
+                {
+                    <RadzenText class="align-content-center">Tipo:  @pokemon.Tipo.First().Name </RadzenText>
+                }
+                else
+                {
+                    <RadzenText class="align-content-center">Tipo:  @pokemon.Tipo.First().Name / @pokemon.Tipo.Last().Name </RadzenText>
+                }
+            }
+            <RadzenImage Path="@pokemon.Foto" Style="width:200px; margin-top:-15px;" />
+        </div>
+    </RadzenCard>
+
+}
+
+
+
+
+@code {
+    private string pokedexImg = @"~/img/pokedex.png";
+    private string showDiv = "none";
+    private string pokefoto, pokeName, pokeTipo ,background  = "";
+
+
+    List<showPokemonView> pokemons = new List<showPokemonView>();
+
+    private readonly KindAndColorDictionary kindAndColorDictionary = new();
+    private List<Tipos> tiposPokemon = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var resultado = PokemonsServices.GetPokemonsAsync(0, 151);
+
+        pokemons = await resultado;
+
+    }
+
+    public string setBackGroundColor(List<Tipos> tipos)
+    {
+        var colors1 = tipos.First().Name;
+        var colors2 = tipos.Last().Name;
+        string result = "";
+
+        if (colors2 != null)
+        {
+            var color1 = kindAndColorDictionary.ColorDictionary.FirstOrDefault(x => x.Key == colors1).Value;
+            var color2 = kindAndColorDictionary.ColorDictionary.FirstOrDefault(x => x.Key == colors2).Value;
+            result = $"background-image: linear-gradient(to bottom right, {color1} 0%, {color1} 50%, {color2} 50%,{color2} 100% );";
+        }
+        else
+        {
+            var color1 = kindAndColorDictionary.ColorDictionary.Select(x => x.Value).Contains(colors1);
+            result = $"background-image: linear-gradient(to bottom right, {color1} 0%, {color1} 50%, {color1} 50%,{color1} 100% );";
+        }
+
+
+        return result;
+    }
+    protected void HiddenPokedex()
+    {
+        showDiv = "none";
+    }
+
+    protected void ShowPokedex(string name, string foto, string tipo)
+    {
+        pokefoto = foto;
+        pokeName = name;
+        pokeTipo = tipo;
+        showDiv = "block";
+    }
+}
